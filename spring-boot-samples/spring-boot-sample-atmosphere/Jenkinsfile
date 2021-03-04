@@ -1,1 +1,47 @@
-
+pipeline {
+	agent any
+	environment {
+		myrepo='spring-boot-samples/spring-boot-sample-atmosphere'
+		}
+	tools  {
+		maven 'm3'
+	}	
+	stages {
+		stage ('checkout'){
+			steps {
+				git 'https://github.com/anilkumar0306/jenkins.git'
+			}
+		}	
+		stage ('build'){
+			steps {
+				sh "mvn clean package -f $myrepo/pom.xml "
+			}
+		}
+		stage ('testresults'){
+			steps {
+				junit "$myrepo/target/surefire-reports/*.xml"
+			}
+		}
+		stage ('archive actifacts'){
+			steps {
+				archiveArtifacts artifacts:"$myrepo/target/*.?ar/", followSymlinks: false
+			}
+		}
+	}
+	post {
+			success {
+				notify('Success')
+			}
+			failure {
+				notify('Failed')
+			}
+		}
+	}
+def notify(status){
+    emailext (
+      to: "sandeep.munna3@gmail.com",
+      subject: "${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+      body: """<p>${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+        <p>Check console output at <a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>""",
+    )
+}
